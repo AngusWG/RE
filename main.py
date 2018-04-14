@@ -3,6 +3,7 @@
 # @Time    : 2018/4/11 0011 13:36
 # @author  : zza
 # @Email   : 740713651@qq.com
+"""整个系统的主入库"""
 from kivy.app import App
 from kivy.uix.label import Label
 
