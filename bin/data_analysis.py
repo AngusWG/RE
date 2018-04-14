@@ -10,11 +10,11 @@ class DataAnalysis:
         pass
 
     @classmethod
-    def feature_extraction(cls, ):
+    def feature_extraction(cls):
         """特征提取"""
         pass
 
     @classmethod
-    def item_collaboration_filter(cls, ):
+    def item_collaboration_filter(cls):
         """基于物品的协同过滤算法"""
         pass

@@ -10,16 +10,16 @@ class Scrapy:
         pass
 
     @classmethod
-    def film_info(cls, ):
+    def film_info(cls):
         """电影信息爬取"""
         pass
 
     @classmethod
-    def film_review_list(cls, ):
+    def film_review_list(cls):
         """电影评论爬取"""
         pass
 
     @classmethod
-    def user_info(cls, ):
+    def user_info(cls):
         """用户信息爬取"""
         pass
