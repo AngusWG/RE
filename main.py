@@ -7,8 +7,14 @@
 from kivy.app import App
 from kivy.uix.label import Label
 
+from bin.server import Server
+
 
 class MyApp(App):
+    def __init__(self, **kwargs):
+        self.server = Server()
+        super().__init__(**kwargs)
+
     def build(self):
         return Label(text='Hello world')
 
