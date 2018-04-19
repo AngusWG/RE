@@ -8,7 +8,6 @@ from kivy.app import App
 from kivy.uix.label import Label
 
 from bin.server import Server
-from crawl.crawl_main import do
 
 
 class MyApp(App):
@@ -28,4 +27,5 @@ if __name__ == '__main__':
     # main()
     ####
     #爬虫
-    do()
+    # do()
+    pass

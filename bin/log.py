@@ -7,14 +7,16 @@
 class log():
     __instance = None
 
-    def debug(self,  *args):
+    def debug(self, *args):
         print(*args)
 
-    def info(self,  *args):
+    def info(self, *args):
         print(*args)
 
-    def error(self,  *args, err=Exception):
-        print(*args)
+    def error(self, msg, err=None, url=None, *args):
+        if url:
+            print(url)
+        print(msg)
 
     def __new__(cls, *args, **kwargs):
         if cls.__instance is None:
