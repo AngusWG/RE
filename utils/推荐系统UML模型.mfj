@@ -10705,7 +10705,7 @@
 											"height": 13,
 											"autoResize": false,
 											"underline": true,
-											"text": "+film_info()",
+											"text": "+film_info_by_name()",
 											"horizontalAlignment": 0,
 											"verticalAlignment": 5,
 											"wordWrap": false
@@ -11113,7 +11113,7 @@
 											"height": 13,
 											"autoResize": false,
 											"underline": false,
-											"text": "+file_info()",
+											"text": "+file_info_by_name()",
 											"horizontalAlignment": 0,
 											"verticalAlignment": 5,
 											"wordWrap": false
@@ -11171,7 +11171,7 @@
 											"height": 13,
 											"autoResize": false,
 											"underline": false,
-											"text": "+DB_check()",
+											"text": "+db_check()",
 											"horizontalAlignment": 0,
 											"verticalAlignment": 5,
 											"wordWrap": false
@@ -13823,7 +13823,7 @@
 							"_parent": {
 								"$ref": "AAAAAAFiwwFxvYik8Ik="
 							},
-							"name": "film_info",
+							"name": "film_info_by_name",
 							"documentation": "电影信息爬取",
 							"visibility": "public",
 							"isStatic": true,
@@ -13919,7 +13919,7 @@
 							"_parent": {
 								"$ref": "AAAAAAFiwwGcaYjOJ5c="
 							},
-							"name": "file_info",
+							"name": "file_info_by_name",
 							"documentation": "获取一部电影的信息",
 							"visibility": "public",
 							"isStatic": false,
@@ -13949,7 +13949,7 @@
 							"_parent": {
 								"$ref": "AAAAAAFiwwGcaYjOJ5c="
 							},
-							"name": "DB_check",
+							"name": "db_check",
 							"visibility": "public",
 							"isStatic": false,
 							"isLeaf": false,
