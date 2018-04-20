@@ -74,6 +74,14 @@ class DBUtils:
             result.append(item)
         return result
 
+    def save_tag_file_num(self, char, num):
+        info = {"_id": char, "time": self.now()}
+        self.db["search_log"].update({"_id": info["_id"]}, {"$set": info}, upsert=True)
+
+    def find_tag_file_num(self, char):
+        res = self.db["search_log"].find_one({"_id": char})
+        return res.get("num") if res else 0
+
 
 if __name__ == '__main__':
     db = DBUtils()
