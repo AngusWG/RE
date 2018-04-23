@@ -30,7 +30,7 @@ class Server:
         """基于相同属性的推荐电影"""
         # 获得电影标签
         self.log.info("开始电影同标签推荐")
-        args = [self.film_info(i) for i in args]
+        args = [self.film_info(i) for i in- args]
         tags = []
         # same_tags = self.calc_same_tag(*[i.get("tags") for i in args])
         [tags.extend(i.get("tags")) for i in args]
@@ -62,7 +62,9 @@ class Server:
         for id in user_list:
             user_list.append(self.user_info(id))
         # 去重
+        user_data = [eval(i) for i in set([str(i) for i in user_data])]
         # 计算权重
+        self.data_analysis.item_collaboration_filter(user_data)
         # 排序
 
     def film_info(self, id, tag=None):
@@ -141,7 +143,7 @@ if __name__ == '__main__':
     # server.same_attributes("1307914", "1307914", "6786002")
     server.same_taste("1307914", "1307914", "6786002")
     # a = server.find_films_by_tag("感人")
-
+    # print(server.user_info("62457534"))
     # print(a)
     # print(len(set([i.get("_id") for i in a])))
     pass

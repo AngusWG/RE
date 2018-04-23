@@ -24,10 +24,17 @@ class DataAnalysis:
         return res_data[:int(len(res_data) / 3)]
 
     @classmethod
-    def item_collaboration_filter(cls):
+    def item_collaboration_filter(cls, user_data):
         """基于物品的协同过滤算法"""
-        pass
+        mylist = user_data
+        myset = set(mylist)  # myset是另外一个列表，里面的内容是mylist里面的无重复 项
+        res = {}
+        for item in myset:
+            res[item] = mylist.count(item)
+        res = sorted(res, key=lambda a: a[1], reverse=True)
+        print(res)
 
 
 if __name__ == '__main__':
-    DataAnalysis.feature_extraction()
+    # DataAnalysis.feature_extraction()
+    pass

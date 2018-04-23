@@ -53,7 +53,7 @@ class Crawler:
             self.log.error(id + " " + name + " 没有tags数据", err=err)
             tags = []
         info = {"_id": id, "name": name, "tags": tags}
-        self.log.info("{} {} 的信息获取完毕".format(id,name))
+        self.log.info("{} {} 的信息获取完毕".format(id, name))
         return info
 
     def film_review_list(self, id):
@@ -64,13 +64,15 @@ class Crawler:
         flag = False
         res = []
         while True:
-            item = self.driver.find_elements_by_xpath('//*[@id="comments"]/div/div[2]/h3/span[2]/a')
-            item = self.driver.find_elements_by_xpath('//span[@class="comment-info"')
+            item = self.driver.find_elements_by_xpath('//span[@class="comment-info"]')
             for i in item:
-                a = i.get_attribute("href")
+                star = i.find_elements_by_tag_name("span")[1].get_attribute("class")
+                if not star == "allstar50 rating":
+                    continue
+                a = i.find_element_by_tag_name("a").get_attribute("href")
                 res.append(a.split("/")[-2])
             if len(res) > self.user_max or len(item) < 15:
-                print(len(res) , self.user_max , len(item))
+                print(len(res), self.user_max, len(item))
                 break
             try:
                 self.driver.find_element_by_xpath('//*[@id="paginator"]/a').click()
@@ -83,6 +85,7 @@ class Crawler:
 
     def user_info(self, id):
         """用户信息爬取"""
+        # todo
         url = self.baseURL + "people/" + id + "/collect"
         self.driver.get(url)
         res = []
@@ -91,8 +94,8 @@ class Crawler:
         while True:
             items = self.driver.find_elements_by_xpath('//*[@id="content"]/div[2]/div[1]/div[2]/div/div[2]/ul/li[1]/a')
             for i in items:
-                id = i.get_attribute("href")[:-1]
-                res.append(id[id.rfind('/') + 1:])
+                film_id = i.get_attribute("href")[:-1]
+                res.append(film_id[film_id.rfind('/') + 1:])
             if len(res) > self.max_film or len(items) < 15:
                 break
             try:
@@ -102,6 +105,7 @@ class Crawler:
                 break
             self.log.info("已获得{}用户的的数据量：{} ".format(id, len(res) / self.max_film))
         self.log.info("{} 用户数据抓取完成".format(id))
+        res = {"_id": id, "films": res}
         return res
 
     def file_name_list(self, name):
@@ -151,10 +155,10 @@ if __name__ == '__main__':
     # print(crawler.film_review_list("6722879"))
     # print(crawler.film_info_by_id(1315316))
     # print(crawler.film_info_by_name("她"))
-    # print(crawler.user_info("Obtson"))
     # print(crawler.file_name_list("她"))
     # a = crawler.same_tag_list("黑帮")
     #
     # print(len(set(a)))
     # print(a)
+
     pass
