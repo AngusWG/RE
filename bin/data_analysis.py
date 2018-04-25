@@ -6,6 +6,8 @@
 
 
 class DataAnalysis:
+    return_num = 15
+
     def __init__(self):
         pass
 
@@ -21,7 +23,8 @@ class DataAnalysis:
                 item["len"] = len(same_tag)
                 res_data.append(item)
         res_data = sorted(res_data, key=lambda a: a.get("len"), reverse=True)
-        return res_data[:int(len(res_data) / 3)]
+        res_data = res_data[:cls.return_num] if len(res_data) > cls.return_num else res_data
+        return res_data
 
     @classmethod
     def item_collaboration_filter(cls, user_data):
@@ -31,8 +34,16 @@ class DataAnalysis:
         res = {}
         for item in myset:
             res[item] = mylist.count(item)
-        res = sorted(res, key=lambda a: a[1], reverse=True)
-        print(res)
+        res = sorted(res.items(), key=lambda a: a[1], reverse=True)
+        print(len(res))
+        res_data = list()
+        # 去掉少数项目
+        for k, v in res:
+            if v == 1:
+                continue
+            res_data.append((k, v))
+        res_data = res_data[:cls.return_num] if len(res_data) > cls.return_num else res_data
+        return res_data
 
 
 if __name__ == '__main__':

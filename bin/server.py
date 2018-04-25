@@ -3,6 +3,7 @@
 # @Time    : 2018/4/11 0011 13:36
 # @author  : zza
 # @Email   : 740713651@qq.com
+from pprint import pprint
 
 from bin.crawler import Crawler
 from bin.data_analysis import DataAnalysis
@@ -14,9 +15,9 @@ class Server:
     """接受来自界面的各种请求"""
 
     def __init__(self, log: log):
-        self.max_num = 100
+        self.max_num = 150
         self.log = log
-        self.crawler = Crawler(self.log)
+        self.crawler = Crawler(film_max=self.max_num, user_max=self.max_num * 3, log=self.log)
         self.db = DBUtils()
         self.log.info("数据库载入成功")
         self.log.info("服务载入成功")
@@ -30,7 +31,7 @@ class Server:
         """基于相同属性的推荐电影"""
         # 获得电影标签
         self.log.info("开始电影同标签推荐")
-        args = [self.film_info(i) for i in- args]
+        args = [self.film_info(i) for i in args]
         tags = []
         # same_tags = self.calc_same_tag(*[i.get("tags") for i in args])
         [tags.extend(i.get("tags")) for i in args]
@@ -42,30 +43,38 @@ class Server:
 
         # 数据去重
         file_list = [eval(i) for i in set([str(i) for i in file_list])]
-
+        # 去参数
+        for i in args:
+            file_list.remove(self.film_info(i["_id"]))
         return self.data_analysis.feature_extraction(tags, file_list)
 
     def same_taste(self, *args):
         """基于相同品味的推荐电影"""
-        # 获取热爱这个电影的用户id
-
-        # 查询每个用户喜欢的其他电影
-
-        # 计算权重最高
-        # 获得喜欢这类电影的人
         user_list = []
         for id in args:
-            user_list += self.crawler.film_review_list(id)
-
+            a = self.crawler.film_review_list(id)
+            user_list += a
+        # 去重
+        user_list = list(set(user_list))
+        self.log.info(msg="总共需要爬 {} 个用户数据".format(len(user_list)))
         # 获得这类人喜欢的电影
         user_data = []
         for id in user_list:
-            user_list.append(self.user_info(id))
-        # 去重
-        user_data = [eval(i) for i in set([str(i) for i in user_data])]
+            user = self.user_info(id)
+            user_data += user["films"]
+            self.log.info(msg="爬取数据进度 {}%".format(int(user_list.index(id) / len(user_list) * 100)))
+        # 去掉参数电影
+        for id in args:
+            user_data.remove(id)
+        self.log.info(msg="共 {} 个电影数据".format(len(user_data)))
         # 计算权重
-        self.data_analysis.item_collaboration_filter(user_data)
-        # 排序
+        rank_data = self.data_analysis.item_collaboration_filter(user_data)
+        res = []
+        for k, v in rank_data:
+            film = self.film_info(k)
+            film["rank"] = v
+            res.append(film)
+        return res
 
     def film_info(self, id, tag=None):
         """获得电影信息"""
@@ -136,12 +145,11 @@ def test233():
 
 if __name__ == '__main__':
     server = Server(log())
-    # file0 = server.film_name_list("无间道")[0]
+    file0 = server.film_name_list("无间道")[0]
     # file1 = server.film_name_list("禁闭岛")[0]
     # file2 = server.film_name_list("触不可及")[0]
     # print(file0, file1, file2)
-    # server.same_attributes("1307914", "1307914", "6786002")
-    server.same_taste("1307914", "1307914", "6786002")
+    # pprint(server.same_taste("26311973"))
     # a = server.find_films_by_tag("感人")
     # print(server.user_info("62457534"))
     # print(a)
