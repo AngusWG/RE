@@ -12,19 +12,6 @@ from bin.log import log
 from bin.server import Server
 
 
-#
-# class MyApp(App):
-#     def __init__(self, **kwargs):
-#         self.server = Server(log())
-#         super().__init__(**kwargs)
-#
-#     def build(self):
-#         return Label(text='Hello world')
-#
-#
-# def main_by_ui():
-#     MyApp().run()
-
 
 def main_by_command():
     server = Server(log())
@@ -47,8 +34,37 @@ def main_by_command():
     pprint(res)
 
 
+def test233():
+    server = Server(log())
+
+    res = ["她 Her (2013)",
+           "怦然心动", "小情人", "初恋这件小事", "宝贝老板", "爱宠大机密", "香肠派对", "欢乐好声音", "冰雪奇缘", "无敌破坏王",
+           "疯狂动物城"]
+    arg = []
+    print("开始搜索")
+    for i in res:
+        film =server.film_name_list(i)[0]
+        print("获得{}的数据".format(film["name"]))
+        arg.append(film["_id"])
+    pprint(server.same_taste(*arg))
+
+    ##########################
+    # file0 = server.film_name_list("无间道")[0]
+    # file1 = server.film_name_list("禁闭岛")[0]
+    # file2 = server.film_name_list("触不可及")[0]
+    # print(file0, file1, file2)
+    # pprint(server.same_taste("26311973"))
+    # a = server.find_films_by_tag("感人")
+    # print(server.user_info("62457534"))
+    # print(a)
+    # print(len(set([i.get("_id") for i in a])))
+
+
+
+
 if __name__ == '__main__':
-    main_by_command()
+    # main_by_command()
+    test233()
     ####
     # 爬虫
     # do()

@@ -15,9 +15,10 @@ class Server:
     """接受来自界面的各种请求"""
 
     def __init__(self, log: log):
-        self.max_num = 150
+        self.film_max = 100
+        self.user_max = self.film_max * 1
         self.log = log
-        self.crawler = Crawler(film_max=self.max_num, user_max=self.max_num * 3, log=self.log)
+        self.crawler = Crawler(film_max=self.film_max, user_max=self.user_max, log=self.log)
         self.db = DBUtils()
         self.log.info("数据库载入成功")
         self.log.info("服务载入成功")
@@ -52,7 +53,7 @@ class Server:
         """基于相同品味的推荐电影"""
         user_list = []
         for id in args:
-            a = self.crawler.film_review_list(id)
+            a = self.film_reviews_list(id)['reviews']
             user_list += a
         # 去重
         user_list = list(set(user_list))
@@ -64,14 +65,14 @@ class Server:
             user_data += user["films"]
             self.log.info(msg="爬取数据进度 {}%".format(int(user_list.index(id) / len(user_list) * 100)))
         # 去掉参数电影
-        for id in args:
-            user_data.remove(id)
         self.log.info(msg="共 {} 个电影数据".format(len(user_data)))
         # 计算权重
         rank_data = self.data_analysis.item_collaboration_filter(user_data)
         res = []
         for k, v in rank_data:
             film = self.film_info(k)
+            if film['_id'] in args:
+                continue
             film["rank"] = v
             res.append(film)
         return res
@@ -106,12 +107,12 @@ class Server:
         return data[:10] if len(data) > 10 else data
 
     def find_films_by_tag(self, char):
-        db_data = self.db.search(char)
+        db_data = self.db.find_same_tag_film(char)
         db_data_id = set([i.get("_id") for i in db_data])
-        if len(db_data_id) > self.max_num:
+        if len(db_data_id) > self.film_max:
             self.log.info("标签 {} 从数据库获取到 {} 条 不爬取资源".format(char, len(db_data_id)))
             return db_data
-        if self.db.find_tag_file_num(char) < self.max_num:
+        if self.db.find_tag_file_num(char) < self.film_max:
             return db_data
         self.log.info("标签 {} 数据不够，数据库数据量为 {} 开始爬取".format(char, len(db_data_id)))
         crawler_id = set(self.crawler.same_tag_list(char))
@@ -134,24 +135,15 @@ class Server:
                 data = item.get("_id") + "\t" + "".join(tag_list)
                 f.write(data + "\n")
 
-
-def test233():
-    server = Server(log())
-    res = ["她 Her (2013)", "怦然心动", "小情人", "初恋这件小事", "宝贝老板", "爱宠大机密", "香肠派对", "欢乐好声音", "冰雪奇缘", "无敌破坏王", "疯狂动物城"]
-    for i in res:
-        res.append(server.film_name_list(i)[0])
-    server.same_attributes(*res)
+    def film_reviews_list(self, id):
+        film = self.db.find_file_reviews_by_id(id)
+        # if not film or len(film.get("reviews")) < self.user_max - 5:
+        if film is None:
+            self.log.info("{}数据不够。从网络爬取".format(id))
+            reviews = self.crawler.film_review_list(id)
+            film = self.db.save_film_reviews({"_id": id, "reviews": reviews})
+        return film
 
 
 if __name__ == '__main__':
-    server = Server(log())
-    file0 = server.film_name_list("无间道")[0]
-    # file1 = server.film_name_list("禁闭岛")[0]
-    # file2 = server.film_name_list("触不可及")[0]
-    # print(file0, file1, file2)
-    # pprint(server.same_taste("26311973"))
-    # a = server.find_films_by_tag("感人")
-    # print(server.user_info("62457534"))
-    # print(a)
-    # print(len(set([i.get("_id") for i in a])))
     pass

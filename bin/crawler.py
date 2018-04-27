@@ -18,11 +18,13 @@ class Crawler:
         self.film_max = film_max
         self.baseURL = "https://movie.douban.com/"
         service_args = ['--proxy=127.0.0.1:9999', '--proxy-type=socks5']
+        service_args = []
         dcap = dict(DesiredCapabilities.PHANTOMJS)
         # 从USER_AGENTS列表中随机选一个浏览器头，伪装浏览器
         dcap["phantomjs.page.settings.userAgent"] = (random.choice(config.USER_AGENTS))
         dcap["phantomjs.page.settings.loadImages"] = False
         self.driver = webdriver.PhantomJS(executable_path="bin/phantomjs.exe", service_args=service_args)
+        # self.driver = webdriver.PhantomJS(executable_path="./phantomjs.exe", service_args=service_args)
         self.user_max = user_max
         self.log = log
         self.log_count = 0
@@ -69,7 +71,6 @@ class Crawler:
         id = str(id)
         url = self.baseURL + "subject/" + id + "/comments?sort=new_score&status=P&percent_type=h"
         self.driver.get(url)
-        flag = False
         res = []
         while True:
             self.driver.implicitly_wait(30)
@@ -171,7 +172,6 @@ if __name__ == '__main__':
     # crawler.log.error("6636")
     user_id = crawler.film_review_list("6722879")
     print(len(set(user_id)), user_id)
-
     # print(crawler.film_info_by_id(1315316))
     # print(crawler.film_info_by_name("她"))
     # print(crawler.file_name_list("她"))
@@ -179,5 +179,4 @@ if __name__ == '__main__':
     #
     # print(len(set(a)))
     # print(a)
-
     pass

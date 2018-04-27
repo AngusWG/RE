@@ -17,29 +17,9 @@ class DBUtils:
         self.invalid_time = 30 * 24 * 3600
 
     def valid(self, info):
+        if not info:
+            return None
         return info if self.now() > info["time"] else None
-
-    def file_info_by_name(self, film_name):
-        """获取一部电影的信息"""
-        res = self.db["film_info"].find_one({"name": film_name})
-        return res
-
-    def file_info_by_id(self, id):
-        """获取一部电影的信息"""
-        res = self.db["film_info"].find_one({"_id": id})
-        return res
-
-    def user_info_by_id(self, id):
-        """获取一部电影的信息"""
-        res = self.db["user_info"].find_one({"_id": id})
-        return res
-
-    def file_name_list(self, char=""):
-        """搜索数据库中电影的名字集，结果多于X条返回None，名字错误返回False，"""
-        result = []
-        for item in self.db["name_info"].find({"name": {"$regex": ".*" + char + ".*", "$options": "$i"}}):
-            result.append(item["name"])
-        return result
 
     @staticmethod
     def db_check():
@@ -56,6 +36,28 @@ class DBUtils:
     def now():
         return int(time.time())
 
+    def file_info_by_name(self, film_name):
+        """获取一部电影的信息"""
+        res = self.db["film_info"].find_one({"name": film_name})
+        return self.valid(res)
+
+    def file_info_by_id(self, id):
+        """获取一部电影的信息"""
+        res = self.db["film_info"].find_one({"_id": id})
+        return self.valid(res)
+
+    def user_info_by_id(self, id):
+        """获取一部电影的信息"""
+        res = self.db["user_info"].find_one({"_id": id})
+        return self.valid(res)
+
+    def file_name_list(self, char=""):
+        """搜索数据库中电影的名字集，结果多于X条返回None，名字错误返回False，"""
+        res = []
+        for item in self.db["name_info"].find({"name": {"$regex": ".*" + char + ".*", "$options": "$i"}}):
+            res.append(item["name"])
+        return self.valid(res)
+
     def save_file(self, info):
         """存储电影信息"""
         info["time"] = self.now()
@@ -68,19 +70,28 @@ class DBUtils:
         self.db["user_info"].update({"_id": info["_id"]}, {"$set": info}, upsert=True)
         return info
 
-    def search(self, char):
+    def save_tag_file_num(self, char, num):
+        info = {"_id": char, "time": self.now()}
+        self.db["search_log"].update({"_id": info["_id"]}, {"$set": info}, upsert=True)
+
+    def save_film_reviews(self, info):
+        info["time"] = self.now()
+        self.db["film_reviews"].update({"_id": info["_id"]}, {"$set": info}, upsert=True)
+        return info
+
+    def find_tag_file_num(self, char):
+        res = self.db["search_log"].find_one({"_id": char})
+        return res.get("num") if res else 0
+
+    def find_same_tag_film(self, char):
         result = []
         for item in self.db["film_info"].find({"tags": char}):
             result.append(item)
         return result
 
-    def save_tag_file_num(self, char, num):
-        info = {"_id": char, "time": self.now()}
-        self.db["search_log"].update({"_id": info["_id"]}, {"$set": info}, upsert=True)
-
-    def find_tag_file_num(self, char):
-        res = self.db["search_log"].find_one({"_id": char})
-        return res.get("num") if res else 0
+    def find_file_reviews_by_id(self, id):
+        res = self.db["film_reviews"].find_one({"_id": id})
+        return self.valid(res)
 
 
 if __name__ == '__main__':
@@ -89,7 +100,7 @@ if __name__ == '__main__':
     # print(DBUtils().file_info_by_name("她"))
     # print(db.file_info_by_id('1307914'))
     # print([i for i in db.db["film_info"].find()])
-    a = db.search("黑帮")
+    a = db.find_same_tag_film("黑帮")
 
     print(len(set(a)))
     print(a)
