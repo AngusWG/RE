@@ -102,7 +102,7 @@ class DBUtils:
 
     def save_hot_items(self, film_list):
         res = self.hot_items_ids()
-        res = list(set(res + [i[0] for i in film_list]))
+        res = list(set(res + [i[0] for i in film_list])) if len(film_list[0])==2 else list(set(res + [i for i in film_list]))
         item = {"_id": str(int(time.time() / 604800)), "hot_film_list": res}
         res = self.db["hot_film"].update({"_id": item["_id"]}, {"$set": item}, upsert=True)
         return True

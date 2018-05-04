@@ -14,7 +14,7 @@ from bin.log import log
 class Server:
     """接受来自界面的各种请求"""
 
-    return_num = 10
+    return_num = 15
 
     def __init__(self, log: log):
         self.film_max = 100
@@ -50,7 +50,6 @@ class Server:
         for i in args:
             file_list.remove(self.film_info(i["_id"]))
         res_data = self.data_analysis.feature_extraction(tags, file_list)
-        # res_data = self.avoid_hot_items(res_data)
         res_data = res_data[:self.return_num] if len(res_data) > self.return_num else res_data
         return res_data
 
@@ -147,7 +146,13 @@ class Server:
 
     def films_by_user(self, user_id):
         user = self.user_info(user_id)
-        films = [self.film_info(i) for i in user["films"]]
+        films = user["films"]
+        if len(films) < 500:
+            x = self.crawler.film_max
+            self.crawler.film_max = 10000000
+            user = self.db.save_user(self.crawler.user_info(user_id))
+            self.crawler.film_max = x
+            films = user["films"]
         return films
 
 

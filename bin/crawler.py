@@ -17,13 +17,15 @@ from bin.log import log
 class Crawler:
     def __init__(self, film_max, user_max, log: log, filter_degree=0):
         self.baseURL = "https://movie.douban.com/"
-        service_args = ['--proxy=127.0.0.1:9999', '--proxy-type=socks5']
-        service_args = []
+        service_args = ['--ignore-ssl-errors=true',
+                        '--ssl-protocol=TLSv1']
+        # service_args = ['--proxy=127.0.0.1:9999', '--proxy-type=socks',]
         dcap = dict(DesiredCapabilities.PHANTOMJS)
         # 从USER_AGENTS列表中随机选一个浏览器头，伪装浏览器
         dcap["phantomjs.page.settings.userAgent"] = (random.choice(config.USER_AGENTS))
         dcap["phantomjs.page.settings.loadImages"] = False
-        self.driver = webdriver.PhantomJS(executable_path="bin/phantomjs.exe", service_args=service_args)
+        self.driver = webdriver.PhantomJS(executable_path="bin/phantomjs.exe", service_args=service_args,
+                                          desired_capabilities=dcap)
         self.filter_degree = filter_degree % 10
         self.film_max = film_max
         self.user_max = user_max
@@ -61,8 +63,9 @@ class Crawler:
     def film_info_by_id(self, id):
         id = str(id)
         self.driver.get(self.baseURL + "subject/" + id)
-        name = self.driver.find_element_by_xpath('//*[@id="content"]/h1').text
+        name = id
         try:
+            name = self.driver.find_element_by_xpath('//*[@id="content"]/h1').text
             tags = self.driver.find_element_by_xpath('//*[@class="tags-body"]').text
             tags = tags.split()
         except TypeError as err:
@@ -107,7 +110,8 @@ class Crawler:
         """用户信息爬取"""
         # todo
         id = str(id)
-        url = self.baseURL + "people/" + id + "/collect"
+        num = 0
+        url = self.baseURL + "people/" + id + "/collect?start=" + str(num)
         self.driver.get(url)
         res = []
         flag = False
@@ -123,12 +127,17 @@ class Crawler:
             if len(res) > self.film_max or len(items) < 15:
                 break
             try:
-                self.driver.find_element_by_xpath('//*[@class="next"]').click()
+                num += 15
+                url = self.baseURL + "people/" + id + "/collect?start=" + str(num)
+                self.driver.get(url)
             except:
                 self.log.error("下一页按钮 异常")
                 break
             self.log.info("已获得{}用户的的数据量：{} %".format(id, len(res) * 100 / self.film_max))
         self.log.info("用户id:{} 数据抓取完成".format(id))
+        if len(res)==0:
+            self.made_log()
+            raise Exception("异常 请检查")
         res = {"_id": id, "films": res}
         return res
 
