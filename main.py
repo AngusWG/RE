@@ -8,9 +8,9 @@
 # from kivy.uix.label import Label
 from pprint import pprint
 
+from bin.crawler import Crawler
 from bin.log import log
 from bin.server import Server
-
 
 
 def main_by_command():
@@ -34,19 +34,26 @@ def main_by_command():
     pprint(res)
 
 
-def test233():
-    server = Server(log())
+def test_crawler():
+    l = log()
+    crawler = Crawler(100, 100, l)
+    user_id = crawler.film_review_list("6722879")
+    print(len(set(user_id)), user_id)
+    print(crawler.film_info_by_id(1315316))
+    print(crawler.film_info_by_name("她"))
+    print(crawler.film_list_by_name("她"))
+    print(crawler.same_tag_list("黑帮"))
 
-    res = ["她 Her (2013)",
-           "怦然心动", "小情人", "初恋这件小事", "宝贝老板", "爱宠大机密", "香肠派对", "欢乐好声音", "冰雪奇缘", "无敌破坏王",
-           "疯狂动物城"]
-    arg = []
-    print("开始搜索")
-    for i in res:
-        film =server.film_name_list(i)[0]
-        print("获得{}的数据".format(film["name"]))
-        arg.append(film["_id"])
-    pprint(server.same_taste(*arg))
+
+def test_server():
+    server = Server(log())
+    #######################
+    arg = server.films_by_user('52357979')
+    arg = [i["_id"]for i in arg]
+    film_list = server.same_attributes(*arg)
+    for i in film_list:
+        print("\n推荐电影：" + i["name"])
+        print("电影连接：" + "https://movie.douban.com/subject/" + i["_id"])
 
     ##########################
     # file0 = server.film_name_list("无间道")[0]
@@ -60,11 +67,10 @@ def test233():
     # print(len(set([i.get("_id") for i in a])))
 
 
-
-
 if __name__ == '__main__':
     # main_by_command()
-    test233()
+    # test_crawler()
+    test_server()
     ####
     # 爬虫
     # do()

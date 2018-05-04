@@ -6,15 +6,13 @@
 
 
 class DataAnalysis:
-    return_num = 15
-
-    def __init__(self):
-        pass
 
     @classmethod
     def feature_extraction(cls, tags, file_list):
+        """基于标签的过滤"""
         res_data = []
         tags = set(tags)
+        print("共{}部电影".format(len(file_list)))
         for item in file_list:
             item["tags"] = same_tag = set(item.get("tags"))
             same_tag = tags & same_tag
@@ -23,7 +21,6 @@ class DataAnalysis:
                 item["len"] = len(same_tag)
                 res_data.append(item)
         res_data = sorted(res_data, key=lambda a: a.get("len"), reverse=True)
-        res_data = res_data[:cls.return_num] if len(res_data) > cls.return_num else res_data
         return res_data
 
     @classmethod
@@ -35,15 +32,30 @@ class DataAnalysis:
         for item in myset:
             res[item] = mylist.count(item)
         res = sorted(res.items(), key=lambda a: a[1], reverse=True)
-        print(len(res))
+        print("共{}部电影".format(len(res)))
         res_data = list()
         # 去掉少数项目
         for k, v in res:
             if v == 1:
                 continue
             res_data.append((k, v))
-        res_data = res_data[:cls.return_num] if len(res_data) > cls.return_num else res_data
         return res_data
+
+    @staticmethod
+    def calc_same_tag(*arg):
+        """计算电影数据的相同内容标签"""
+        data = dict()
+        list_data = []
+        [list_data.extend(i) for i in arg]
+        print(list_data)
+        for item in list_data:
+            i = data.get(item)
+            data[item] = i + 1 if i else 0
+        # 去除单个标签
+        data = dict(filter(lambda x: x[1] != 0, data.items()))
+        # 排序
+        data = list(sorted(data.items(), key=lambda x: x[1], reverse=True))
+        return data
 
 
 if __name__ == '__main__':

@@ -14,11 +14,13 @@ from bin.log import log
 class Server:
     """接受来自界面的各种请求"""
 
+    return_num = 10
+
     def __init__(self, log: log):
         self.film_max = 100
         self.user_max = self.film_max * 1
         self.log = log
-        self.crawler = Crawler(film_max=self.film_max, user_max=self.user_max, log=self.log)
+        self.crawler = Crawler(film_max=self.film_max, user_max=self.user_max, log=self.log, filter_degree=0)
         self.db = DBUtils()
         self.log.info("数据库载入成功")
         self.log.info("服务载入成功")
@@ -26,7 +28,7 @@ class Server:
 
     def film_name_list(self, char=""):
         """快速检查用"""
-        return self.crawler.file_name_list(char)
+        return self.crawler.film_list_by_name(char)
 
     def same_attributes(self, *args):
         """基于相同属性的推荐电影"""
@@ -34,7 +36,7 @@ class Server:
         self.log.info("开始电影同标签推荐")
         args = [self.film_info(i) for i in args]
         tags = []
-        # same_tags = self.calc_same_tag(*[i.get("tags") for i in args])
+        # same_tags = self.data_analysis.calc_same_tag(*[i.get("tags") for i in args])
         [tags.extend(i.get("tags")) for i in args]
         # 查询有相同标签的电影
         file_list = []
@@ -44,10 +46,13 @@ class Server:
 
         # 数据去重
         file_list = [eval(i) for i in set([str(i) for i in file_list])]
-        # 去参数
+        # 去除参数
         for i in args:
             file_list.remove(self.film_info(i["_id"]))
-        return self.data_analysis.feature_extraction(tags, file_list)
+        res_data = self.data_analysis.feature_extraction(tags, file_list)
+        # res_data = self.avoid_hot_items(res_data)
+        res_data = res_data[:self.return_num] if len(res_data) > self.return_num else res_data
+        return res_data
 
     def same_taste(self, *args):
         """基于相同品味的推荐电影"""
@@ -65,17 +70,18 @@ class Server:
             user_data += user["films"]
             self.log.info(msg="爬取数据进度 {}%".format(int(user_list.index(id) / len(user_list) * 100)))
         # 去掉参数电影
-        self.log.info(msg="共 {} 个电影数据".format(len(user_data)))
+        self.log.info(msg="共 {} 项电影数据".format(len(user_data)))
         # 计算权重
         rank_data = self.data_analysis.item_collaboration_filter(user_data)
-        res = []
+        rank_data = self.avoid_hot_items(rank_data)
+        res_data = []
         for k, v in rank_data:
             film = self.film_info(k)
             if film['_id'] in args:
                 continue
             film["rank"] = v
-            res.append(film)
-        return res
+            res_data.append(film)
+        return res_data
 
     def film_info(self, id, tag=None):
         """获得电影信息"""
@@ -89,22 +95,6 @@ class Server:
     def user_info(self, id):
         """获得用户信息"""
         return self.db.user_info_by_id(id) or self.db.save_user(self.crawler.user_info(id))
-
-    @staticmethod
-    def calc_same_tag(*arg):
-        data = dict()
-        list_data = []
-        [list_data.extend(i) for i in arg]
-        print(list_data)
-        for item in list_data:
-            i = data.get(item)
-            data[item] = i + 1 if i else 0
-        # 去除单个标签
-        data = dict(filter(lambda x: x[1] != 0, data.items()))
-        # 排序
-        data = list(sorted(data.items(), key=lambda x: x[1], reverse=True))
-        # 返回前十的标签
-        return data[:10] if len(data) > 10 else data
 
     def find_films_by_tag(self, char):
         db_data = self.db.find_same_tag_film(char)
@@ -143,6 +133,22 @@ class Server:
             reviews = self.crawler.film_review_list(id)
             film = self.db.save_film_reviews({"_id": id, "reviews": reviews})
         return film
+
+    def avoid_hot_items(self, res):
+        hot_id_list = self.db.hot_items_ids()
+        self.db.save_hot_items(res[:10])
+        res_data = []
+        for i in res:
+            if i[0] not in hot_id_list:
+                res_data.append(i)
+
+        res_data = res_data[:self.return_num] if len(res_data) > self.return_num else res_data
+        return res_data
+
+    def films_by_user(self, user_id):
+        user = self.user_info(user_id)
+        films = [self.film_info(i) for i in user["films"]]
+        return films
 
 
 if __name__ == '__main__':

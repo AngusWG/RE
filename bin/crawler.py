@@ -6,6 +6,7 @@
 import random
 from urllib.parse import quote
 
+import selenium
 from selenium import webdriver
 from selenium.webdriver import DesiredCapabilities
 
@@ -14,8 +15,7 @@ from bin.log import log
 
 
 class Crawler:
-    def __init__(self, film_max, user_max, log: log):
-        self.film_max = film_max
+    def __init__(self, film_max, user_max, log: log, filter_degree=0):
         self.baseURL = "https://movie.douban.com/"
         service_args = ['--proxy=127.0.0.1:9999', '--proxy-type=socks5']
         service_args = []
@@ -24,7 +24,8 @@ class Crawler:
         dcap["phantomjs.page.settings.userAgent"] = (random.choice(config.USER_AGENTS))
         dcap["phantomjs.page.settings.loadImages"] = False
         self.driver = webdriver.PhantomJS(executable_path="bin/phantomjs.exe", service_args=service_args)
-        # self.driver = webdriver.PhantomJS(executable_path="./phantomjs.exe", service_args=service_args)
+        self.filter_degree = filter_degree % 10
+        self.film_max = film_max
         self.user_max = user_max
         self.log = log
         self.log_count = 0
@@ -34,6 +35,11 @@ class Crawler:
         self.driver.quit()
         self.log.info("爬虫已关闭")
         self.log = None
+
+    def judge_fileter(self):
+        if random.randint(1, 10) > self.filter_degree:
+            return False
+        return True
 
     def made_log(self):
         self.log.debug(self.driver.current_url)
@@ -75,6 +81,8 @@ class Crawler:
         while True:
             self.driver.implicitly_wait(30)
             item = self.driver.find_elements_by_xpath('//span[@class="comment-info"]')
+            if self.judge_fileter():
+                continue
             for i in item:
                 star = i.find_elements_by_tag_name("span")[1].get_attribute("class")
                 if not star == "allstar50 rating":
@@ -91,8 +99,8 @@ class Crawler:
             except:
                 self.log.error("下一页按钮 异常")
                 break
-            self.log.info("已获得 {} 评论数据：{} 条".format(id, len(res)))
-        self.log.info(msg="电影编号：{} 评论数据抓取完成 ".format(id))
+            self.log.info("已获得 {} 喜爱用户：{} 个".format(id, len(res)))
+        self.log.info(msg="电影编号：{} 喜爱用户抓取完成 ".format(id))
         return res
 
     def user_info(self, id):
@@ -107,6 +115,8 @@ class Crawler:
         while True:
             self.driver.implicitly_wait(30)
             items = self.driver.find_elements_by_xpath('//*[@id="content"]/div[2]/div[1]/div[2]/div/div[2]/ul/li[1]/a')
+            if self.judge_fileter():
+                continue
             for i in items:
                 film_id = i.get_attribute("href")[:-1]
                 res.append(film_id[film_id.rfind('/') + 1:])
@@ -122,19 +132,23 @@ class Crawler:
         res = {"_id": id, "films": res}
         return res
 
-    def file_name_list(self, name):
+    def film_list_by_name(self, name):
         url = self.baseURL
         self.driver.get(url)
-        self.driver.find_element_by_xpath('//*[@id="inp-query"]').send_keys(name)
-        self.driver.find_element_by_xpath(
-            '//*[@id="db-nav-movie"]/div[1]/div/div[2]/form/fieldset/div[2]/input').click()
-        items = self.driver.find_elements_by_xpath('//*[@class="title-text"]')
-        res = []
-        for i in items:
-            id = i.get_attribute("href")[:-1]
-            res.append({
-                "_id": id[id.rfind('/') + 1:],
-                "name": i.text})
+        try:
+            self.driver.find_element_by_xpath('//*[@id="inp-query"]').send_keys(name)
+            self.driver.find_element_by_xpath(
+                '//*[@id="db-nav-movie"]/div[1]/div/div[2]/form/fieldset/div[2]/input').click()
+            items = self.driver.find_elements_by_xpath('//*[@class="title-text"]')
+            res = []
+            for i in items:
+                id = i.get_attribute("href")[:-1]
+                res.append({
+                    "_id": id[id.rfind('/') + 1:],
+                    "name": i.text})
+        except selenium.common.exceptions.NoSuchElementException as err:
+            self.made_log()
+            res = None
         return res
 
     def same_tag_list(self, tag):
@@ -147,6 +161,8 @@ class Crawler:
             self.driver.implicitly_wait(30)
             items = self.driver.find_elements_by_xpath(
                 '//div[@class="pl2"]/a')
+            if self.judge_fileter():
+                continue
             for i in items:
                 id = i.get_attribute("href")[:-1]
                 res.append(id[id.rfind('/') + 1:])
@@ -167,16 +183,4 @@ class Crawler:
 
 
 if __name__ == '__main__':
-    l = log()
-    crawler = Crawler(100, 100, l)
-    # crawler.log.error("6636")
-    user_id = crawler.film_review_list("6722879")
-    print(len(set(user_id)), user_id)
-    # print(crawler.film_info_by_id(1315316))
-    # print(crawler.film_info_by_name("她"))
-    # print(crawler.file_name_list("她"))
-    # a = crawler.same_tag_list("黑帮")
-    #
-    # print(len(set(a)))
-    # print(a)
     pass

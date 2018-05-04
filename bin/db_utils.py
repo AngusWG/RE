@@ -17,6 +17,7 @@ class DBUtils:
         self.invalid_time = 30 * 24 * 3600
 
     def valid(self, info):
+        """检查数据是否过期"""
         if not info:
             return None
         return info if self.now() > info["time"] else None
@@ -93,15 +94,32 @@ class DBUtils:
         res = self.db["film_reviews"].find_one({"_id": id})
         return self.valid(res)
 
+    def hot_items_ids(self):
+        res = self.db["hot_film"].find_one({"_id": str(int(time.time() / 604800))})
+        if res:
+            return res["hot_film_list"]
+        return []
+
+    def save_hot_items(self, film_list):
+        res = self.hot_items_ids()
+        res = list(set(res + [i[0] for i in film_list]))
+        item = {"_id": str(int(time.time() / 604800)), "hot_film_list": res}
+        res = self.db["hot_film"].update({"_id": item["_id"]}, {"$set": item}, upsert=True)
+        return True
+
 
 if __name__ == '__main__':
     db = DBUtils()
     # DBUtils().save_file({"_id": "0001", "name": "test1", "tag": ["1", "2", "3"]})
     # print(DBUtils().file_info_by_name("她"))
+    c = eval(
+        """{'_id': '1307914', 'name': '无间道 無間道 (2002)', 'tags': ['香港', '警匪', '黑帮', '经典', '动作', '犯罪', '剧情', '中国'], 'time': 1524143074}""")
     # print(db.file_info_by_id('1307914'))
     # print([i for i in db.db["film_info"].find()])
-    a = db.find_same_tag_film("黑帮")
-
-    print(len(set(a)))
+    # a = db.find_same_tag_film("黑帮")
+    # a = db.save_hot_items([c['_id']])
+    # print(a)
+    a = db.hot_items_ids()
+    # print(len(set(a)))
     print(a)
     pass
