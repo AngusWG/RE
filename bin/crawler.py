@@ -4,25 +4,35 @@
 # @author  : zza
 # @Email   : 740713651@qq.com
 import random
+from urllib import parse
 from urllib.parse import quote
 
 import selenium
 from selenium import webdriver
 from selenium.webdriver import DesiredCapabilities
-
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 import config
 from bin.log import log
 
 
 class Crawler:
     def __init__(self, film_max, user_max, log: log, filter_degree=0):
+        """
+        利用phantomjs浏览器与selenium框架实现的爬虫
+        :param film_max: 一次爬取中，电影数量的上限
+        :param user_max: 一次爬取中，用户数量的上限
+        :param log: 日志记录模块
+        :param filter_degree: 随机过滤程度 0-9可选，越高随机读取越高
+        """
         self.baseURL = "https://movie.douban.com/"
         service_args = ['--ignore-ssl-errors=true',
+                        # '--proxy=119.41.168.186:53281', '--proxy-type=https',
                         '--ssl-protocol=TLSv1']
-        # service_args = ['--proxy=127.0.0.1:9999', '--proxy-type=socks',]
         dcap = dict(DesiredCapabilities.PHANTOMJS)
         # 从USER_AGENTS列表中随机选一个浏览器头，伪装浏览器
-        dcap["phantomjs.page.settings.userAgent"] = (random.choice(config.USER_AGENTS))
+        # dcap["phantomjs.page.settings.userAgent"] = (random.choice(config.USER_AGENTS))
         dcap["phantomjs.page.settings.loadImages"] = False
         self.driver = webdriver.PhantomJS(executable_path="bin/phantomjs.exe", service_args=service_args,
                                           desired_capabilities=dcap)
@@ -38,42 +48,44 @@ class Crawler:
         self.log.info("爬虫已关闭")
         self.log = None
 
-    def judge_fileter(self):
-        if random.randint(1, 10) > self.filter_degree:
-            return False
-        return True
-
     def made_log(self):
+        """记录错误"""
         self.log.debug(self.driver.current_url)
         self.driver.save_screenshot("test_" + str(self.log_count) + ".png")
         self.log_count = self.log_count + 1
 
-    def film_info_by_name(self, name):
-        url = self.baseURL
-        self.driver.get(url)
-        self.driver.find_element_by_xpath('//*[@id="inp-query"]').send_keys(name)
-        self.driver.find_element_by_xpath(
-            '//*[@id="db-nav-movie"]/div[1]/div/div[2]/form/fieldset/div[2]/input').click()
-        items = self.driver.find_elements_by_xpath('//*[@id="root"]/div/div[2]/div[1]/div[1]/div/div/div/div[1]/a')
-        i = items[0]
-        id = i.get_attribute("href")[:-1]
-        id = id[id.rfind('/') + 1:]
-        return self.film_info_by_id(id)
-
     def film_info_by_id(self, id):
+        """通过id获得电影的名称，内容标签"""
         id = str(id)
         self.driver.get(self.baseURL + "subject/" + id)
-        name = id
+        self.driver.implicitly_wait(30)
+        self.made_log()
+        name = self.driver.find_element_by_xpath('//*[@id="content"]/h1').text
         try:
-            name = self.driver.find_element_by_xpath('//*[@id="content"]/h1').text
             tags = self.driver.find_element_by_xpath('//*[@class="tags-body"]').text
             tags = tags.split()
-        except TypeError as err:
+        except (TypeError, selenium.common.exceptions.WebDriverException)as err:
+            self.made_log()
             self.log.error(id + " " + name + " 没有tags数据", err=err)
             tags = []
         info = {"_id": id, "name": name, "tags": tags}
         self.log.info("{} {} 的信息获取完毕".format(id, name))
         return info
+
+    def judge_fileter(self):
+        if random.randint(1, 10) > self.filter_degree:
+            return False
+        return True
+
+    def film_info_by_name(self, name):
+        url = 'https://movie.douban.com/subject_search?search_text={}&cat=1002'.format(parse.quote(name))
+        self.driver.get(url)
+        self.driver.implicitly_wait(30)
+        items = self.driver.find_elements_by_xpath('//*[@id="root"]/div/div[2]/div[1]/div[1]/div/div/div/div[1]/a')
+        i = items[0]
+        id = i.get_attribute("href")[:-1]
+        id = id[id.rfind('/') + 1:]
+        return self.film_info_by_id(id)
 
     def film_review_list(self, id):
         """电影评论爬取"""
@@ -135,19 +147,17 @@ class Crawler:
                 break
             self.log.info("已获得{}用户的的数据量：{} %".format(id, len(res) * 100 / self.film_max))
         self.log.info("用户id:{} 数据抓取完成".format(id))
-        if len(res)==0:
+        if len(res) == 0:
             self.made_log()
             raise Exception("异常 请检查")
         res = {"_id": id, "films": res}
         return res
 
-    def film_list_by_name(self, name):
-        url = self.baseURL
-        self.driver.get(url)
+    def film_list_by_name(self, name, x=0):
         try:
-            self.driver.find_element_by_xpath('//*[@id="inp-query"]').send_keys(name)
-            self.driver.find_element_by_xpath(
-                '//*[@id="db-nav-movie"]/div[1]/div/div[2]/form/fieldset/div[2]/input').click()
+            url = 'https://movie.douban.com/subject_search?search_text={}&cat=1002'.format(parse.quote(name))
+            self.driver.get(url)
+            self.driver.implicitly_wait(30)
             items = self.driver.find_elements_by_xpath('//*[@class="title-text"]')
             res = []
             for i in items:
@@ -155,9 +165,11 @@ class Crawler:
                 res.append({
                     "_id": id[id.rfind('/') + 1:],
                     "name": i.text})
-        except selenium.common.exceptions.NoSuchElementException as err:
+        except (selenium.common.exceptions.NoSuchElementException, selenium.common.exceptions.WebDriverException)as err:
             self.made_log()
-            res = None
+            self.log.error(str(err))
+            print(x)
+            return self.film_list_by_name(name, x + 1) if x < 20 else []
         return res
 
     def same_tag_list(self, tag):

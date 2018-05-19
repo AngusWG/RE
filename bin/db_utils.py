@@ -3,6 +3,7 @@
 # @Time    : 2018/4/11 0011 13:36
 # @author  : zza
 # @Email   : 740713651@qq.com
+import json
 import socket
 import time
 
@@ -13,6 +14,7 @@ from bin.log import log
 
 class DBUtils:
     def __init__(self):
+        """数据存储模块，数据库封装"""
         self.db = self.db_check()
         self.invalid_time = 30 * 24 * 3600
 
@@ -24,28 +26,31 @@ class DBUtils:
 
     @staticmethod
     def db_check():
+        """检查数据库连接是否正常 正常返回一个连接器实例"""
         try:
             re = pymongo.MongoClient("www.4yewu.cn", 27017)["RE"]
+            re.authenticate("test", "123456")
             re["log"].insert_one(
-                {"_id": time.time(), "name": socket.gethostname(), "ip": socket.gethostbyname(socket.gethostname())})
+                {"_id": time.time(), "name": socket.gethostname(),
+                 "ip": socket.gethostbyname(socket.gethostname())})
         except pymongo.errors.ServerSelectionTimeoutError as err:
             log().error("无法连接到数据，请通知管理员", err)
-            return None
+            raise Exception("无法连接到数据，请通知管理员")
         return re
 
-    @staticmethod
-    def now():
-        return int(time.time())
-
-    def file_info_by_name(self, film_name):
+    def film_info_by_name(self, film_name):
         """获取一部电影的信息"""
         res = self.db["film_info"].find_one({"name": film_name})
         return self.valid(res)
 
-    def file_info_by_id(self, id):
+    def film_info_by_id(self, id):
         """获取一部电影的信息"""
         res = self.db["film_info"].find_one({"_id": id})
         return self.valid(res)
+
+    @staticmethod
+    def now():
+        return int(time.time())
 
     def user_info_by_id(self, id):
         """获取一部电影的信息"""
@@ -102,10 +107,51 @@ class DBUtils:
 
     def save_hot_items(self, film_list):
         res = self.hot_items_ids()
-        res = list(set(res + [i[0] for i in film_list])) if len(film_list[0])==2 else list(set(res + [i for i in film_list]))
+        res = list(set(res + [i[0] for i in film_list])) if len(film_list[0]) == 2 else list(
+            set(res + [i for i in film_list]))
         item = {"_id": str(int(time.time() / 604800)), "hot_film_list": res}
         res = self.db["hot_film"].update({"_id": item["_id"]}, {"$set": item}, upsert=True)
         return True
+
+    def same_attr_history(self, args):
+        args = [int(i) for i in args]
+        args.sort()
+        id = json.dumps(args)
+        res = self.db["same_attr_history"].find_one({"_id": id})
+        if res:
+            return self.valid(res)["result"]
+        return []
+
+    def save_same_attr_history(self, args, result):
+        args = [int(i) for i in args]
+        args.sort()
+        id = json.dumps(args)
+        info = dict()
+        info["_id"] = id
+        info["result"] = [i['_id'] for i in result]
+        info["time"] = self.now()
+        self.db["same_attr_history"].update({"_id": info["_id"]}, {"$set": info}, upsert=True)
+        return info
+
+    def same_taste_history(self, args):
+        args = [int(i) for i in args]
+        args.sort()
+        id = json.dumps(args)
+        res = self.db["same_taste_history"].find_one({"_id": id})
+        if res:
+            return self.valid(res)["result"]
+        return []
+
+    def save_same_taste_history(self, args, res_data):
+        args = [int(i) for i in args]
+        args.sort()
+        id = json.dumps(args)
+        info = dict()
+        info["_id"] = id
+        info["result"] = [i['_id'] for i in res_data]
+        info["time"] = self.now()
+        self.db["same_taste_history"].update({"_id": info["_id"]}, {"$set": info}, upsert=True)
+        return info
 
 
 if __name__ == '__main__':

@@ -27,7 +27,7 @@ class DataAnalysis:
     def item_collaboration_filter(cls, user_data):
         """基于物品的协同过滤算法"""
         mylist = user_data
-        myset = set(mylist)  # myset是另外一个列表，里面的内容是mylist里面的无重复 项
+        myset = set(mylist)  # myset是另外一个列表，里面的内容是mylist里面的无重复项
         res = {}
         for item in myset:
             res[item] = mylist.count(item)

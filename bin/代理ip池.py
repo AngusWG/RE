@@ -18,6 +18,11 @@ class 代理ip池:
     database = "WL_scrapy"
     tablename = "ip代理池"
 
+    def __init__(self):
+        re = pymongo.MongoClient("www.4yewu.cn", 27017)["RE"]
+        re.authenticate("test", "123456")
+        self.ip代理池 = re[self.tablename]
+
     def main(self):
         try:
             print("正在启动ip数据获取")
@@ -33,14 +38,13 @@ class 代理ip池:
 
     def jianceip(self, num):
         print("ip时效性检测启动成功")
-        ip代理池 = pymongo.MongoClient(self.ip, self.port)["RE"][self.tablename]
         while True:
             try:
-                alldata = ip代理池.find({})
+                alldata = self.ip代理池.find({})
                 for index, data in enumerate(alldata):
                     results = self.yanZhengIp(data["ip"] + ":" + data["port"], data["type"])
                     if results is None or results == "":
-                        ip代理池.delete_one({"ip": data["ip"], "port": data["port"]})
+                        self.ip代理池.delete_one({"ip": data["ip"], "port": data["port"]})
                         print("ip地址：" + data["ip"] + ":" + data["port"] + "已经失效，已删除")
                     else:
                         print("ip正常")
@@ -51,7 +55,6 @@ class 代理ip池:
 
     def ipGetData(self, num):
         print("ip数据获取启动成功")
-        ip代理池 = pymongo.MongoClient(self.ip, self.port)["RE"][self.tablename]
         while True:
             try:
                 headers = {
@@ -77,9 +80,9 @@ class 代理ip池:
                                 if resultip == "" or resultip == '':
                                     continue
                                 else:
-                                    result = ip代理池.find_one({"ip": ip, "port": port, "type": ifgn})
+                                    result = self.ip代理池.find_one({"ip": ip, "port": port, "type": ifgn})
                                     if result is None:
-                                        ip代理池.insert_one({"ip": ip, "port": port, "type": ifgn})
+                                        self.ip代理池.insert_one({"ip": ip, "port": port, "type": ifgn})
                                         print("获取ip：" + ip + ":" + port + "数据成功")
                         except Exception as e:
                             print(e)
